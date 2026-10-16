@@ -1,0 +1,51 @@
+services:
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: cep-otel-zipkin
+    ports:
+      - "9411:9411"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.119.0
+    container_name: cep-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - zipkin
+
+  service-b:
+    build:
+      context: .
+      args:
+        SERVICE: serviceb
+    container_name: cep-otel-service-b
+    environment:
+      HTTP_PORT: 8081
+      OTEL_SERVICE_NAME: service-b
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
+      WEATHER_API_KEY: ${WEATHER_API_KEY}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - otel-collector
+
+  service-a:
+    build:
+      context: .
+      args:
+        SERVICE: servicea
+    container_name: cep-otel-service-a
+    environment:
+      HTTP_PORT: 8080
+      OTEL_SERVICE_NAME: service-a
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
+      SERVICE_B_URL: http://service-b:8081/
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-b
+      - otel-collector

@@ -1,0 +1,33 @@
+@serviceA = http://localhost:8080
+
+### CEP válido (encaminha para o Serviço B e retorna cidade + temperaturas)
+POST {{serviceA}}/
+Content-Type: application/json
+
+{
+  "cep": "29902555"
+}
+
+### CEP inválido (menos de 8 dígitos) -> 422 invalid zipcode
+POST {{serviceA}}/
+Content-Type: application/json
+
+{
+  "cep": "123"
+}
+
+### CEP inválido (não é string) -> 422 invalid zipcode
+POST {{serviceA}}/
+Content-Type: application/json
+
+{
+  "cep": 29902555
+}
+
+### CEP bem formado mas inexistente -> 404 can not find zipcode
+POST {{serviceA}}/
+Content-Type: application/json
+
+{
+  "cep": "00000000"
+}
